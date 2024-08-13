@@ -1,6 +1,8 @@
 import pandas as pd
 import requests
 from datetime import datetime
+import win32com.client as win32
+import os
 
 # Constants
 TOKEN_URL = 'https://msu.hyperviewhq.com/connect/token'
@@ -111,6 +113,24 @@ def fetch_summary_data(sensor_id):
     response = requests.get(f'{SUMMARY_API_URL}?sensorIds={sensor_id}', headers=HEADERS)
     response.raise_for_status()
     return response.json()
+
+def send_email(file_path):
+    # Initialize Outlook
+    outlook = win32.Dispatch('outlook.application')
+    mail = outlook.CreateItem(0)
+
+    current_date = datetime.now().date()
+
+    # Email details
+    mail.To = 'lakos@msu.edu'
+    mail.Subject = f'Weekly Data Center Sensor Report - {current_date}'
+    mail.Body = 'Please find the attached weekly report.'
+
+    # Attach the file
+    mail.Attachments.Add(file_path)
+
+    # Send the email
+    mail.Send()
 
 def main():
     """
@@ -298,6 +318,9 @@ def main():
         humidity_df.to_excel(writer, sheet_name='Humidity Data', index=False)
         humidity_weekly.to_excel(writer, sheet_name='Humidity Row Weekly Averages', index=False)
 
+    excel_file = os.path.abspath("Rack_Sensor_Data.xlsx")
+
+    send_email(excel_file)
 
 if __name__ == "__main__":
     main()
